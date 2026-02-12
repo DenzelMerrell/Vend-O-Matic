@@ -26,8 +26,6 @@ def insert_coin(body: InsertedCoin, response: Response):
 
     CURRENT_STATE.coins_inserted += 1
 
-    print(f"Total coins inserted: {CURRENT_STATE.coins_inserted}")
-
     response.headers["X-Coins"] = str(CURRENT_STATE.coins_inserted)
     return Response(status_code=status.HTTP_204_NO_CONTENT, headers=response.headers)
 
@@ -54,7 +52,6 @@ def remaining_item_quantity(item_id: int, response: Response):
 
     # Invalid item ID
     if index < 0 or index >= NUMBER_OF_ITEMS_IN_MACHINE:
-        print(f"Invalid item ID requested: {item_id}")
         return Response(status_code=status.HTTP_404_NOT_FOUND)
 
     return CURRENT_STATE.inventory[index]
@@ -76,19 +73,16 @@ def dispense_items(item_id: int, response: Response):
             Feel free to uncomment if you think it makes sense to return a 404 for an invalid item ID.
     """
     # if index < 0 or index >= NUMBER_OF_ITEMS_IN_MACHINE:
-    #     print(f"Invalid item ID requested: {item_id}")
     #     response.headers["X-Coins"] = str(CURRENT_STATE.coins_inserted)
     #     return Response(status_code=status.HTTP_404_NOT_FOUND, headers=response.headers)
 
     # Out of stock
     if CURRENT_STATE.inventory[index] <= 0:
-        print(f"Item {item_id} is out of stock.")
         response.headers["X-Coins"] = str(CURRENT_STATE.coins_inserted)
         return Response(status_code=status.HTTP_404_NOT_FOUND, headers=response.headers)
 
     # Insufficient funds
     if CURRENT_STATE.coins_inserted < QUARTERS_NEEDED_TO_DISPENSE:
-        print(f"Not enough coins inserted: {CURRENT_STATE.coins_inserted} / {QUARTERS_NEEDED_TO_DISPENSE}")
         response.headers["X-Coins"] = str(CURRENT_STATE.coins_inserted)
         return Response(status_code=status.HTTP_403_FORBIDDEN, headers=response.headers)
 
