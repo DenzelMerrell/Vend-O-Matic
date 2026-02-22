@@ -13,3 +13,4 @@ env/
 
 # Windows Explorer metadata
 Thumbs.db
+.env

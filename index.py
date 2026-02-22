@@ -1,6 +1,11 @@
 from fastapi import FastAPI, Response, HTTPException, status
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
+import httpx
+import os
+from dotenv import load_dotenv
+
+load_dotenv()
 
 app = FastAPI(title="Vend-O-Matic")
 
@@ -15,7 +20,7 @@ app.add_middleware(
 )
 
 NUMBER_OF_ITEMS_IN_MACHINE = 12
-INITIAL_STOCK_PER_ITEM = 5
+INITIAL_STOCK_PER_ITEM = 1
 
 # Price per item in quarters
 ITEM_PRICES = {
@@ -43,6 +48,10 @@ CURRENT_STATE = State()
 class InsertedCoin(BaseModel):
     coin: int
 
+class Query(BaseModel):
+    message: str = Field(..., example="What is the meaning of life?")
+    hidden_item: str = Field(..., example="Apple")
+
 # Response Headers: 
     # - X-Coins: $[# of coins accepted]
 @app.put("/", status_code=status.HTTP_204_NO_CONTENT)
@@ -63,6 +72,14 @@ def dispense_coins(response: Response):
     CURRENT_STATE.coins_inserted = 0
     response.headers["X-Coins"] = str(inserted_coins)
     return Response(status_code=status.HTTP_204_NO_CONTENT, headers=response.headers)
+
+# Response Body:
+    # - None
+@app.post("/reset", status_code=status.HTTP_204_NO_CONTENT)
+def reset_machine():
+    CURRENT_STATE.coins_inserted = 0
+    CURRENT_STATE.inventory = [INITIAL_STOCK_PER_ITEM] * NUMBER_OF_ITEMS_IN_MACHINE
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 # Response Body: 
     # - Array of remaining item quantities, (an array of integers)
@@ -132,6 +149,45 @@ def get_prices():
     return ITEM_PRICES
 
 
+
+
+@app.put("/chat", status_code=status.HTTP_200_OK)
+async def chat(query: Query, response: Response):
+    # ngrok_url = os.getenv("NGROK_ENDPOINT_URL", "http://localhost:3000/chat")
+
+    ngrok_url = "https://sulfurously-interested-ozie.ngrok-free.app/chat"
+
+    try:
+        async with httpx.AsyncClient(timeout=None) as client:
+            api_response = await client.post(
+                ngrok_url,
+                json={
+                    "message": query.message,
+                    "hidden_item": query.hidden_item,
+                    "model": "phi3:mini",
+                    "max_tokens": 256
+                },
+                headers={
+                    "ngrok-skip-browser-warning": "true"
+                }
+            )
+
+            api_response.raise_for_status()
+            data = api_response.json()
+
+            return {"reply": data.get("reply", "")}
+
+    except httpx.HTTPStatusError as e:
+        raise HTTPException(
+            status_code=e.response.status_code,
+            detail=e.response.text
+        )
+
+    except httpx.RequestError as e:
+        raise HTTPException(
+            status_code=502,
+            detail=f"Failed to reach endpoint: {str(e)}"
+        )
 """ 
     Bonus endpoint to check how many coins have been inserted without dispensing an item or returning the coins. 
     This is useful for testing and debugging purposes.

@@ -4,6 +4,11 @@ verify_ssl = true
 name = "pypi"
 
 [packages]
+fastapi = "*"
+pydantic = "*"
+httpx = "*"
+python-dotenv = "*"
+uvicorn = "*"
 
 [dev-packages]
 
