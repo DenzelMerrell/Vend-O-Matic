@@ -12,7 +12,7 @@ app = FastAPI(title="Vend-O-Matic")
 # Configure CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173"],  # Your frontend origin
+    allow_origins=[os.getenv("FRONTEND_URL_DEVELOPMENT"), os.getenv("FRONTEND_URL_PRODUCTION")],
     allow_credentials=True,
     allow_methods=["*"],  # Allows all methods (GET, POST, PUT, DELETE, etc.)
     allow_headers=["*"],  # Allows all headers
